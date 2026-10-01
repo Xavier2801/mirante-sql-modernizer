@@ -1,0 +1,16 @@
+{
+  "procedure_name": "fn_arvore_dependentes",
+  "risk_flags": [
+    "RECURSIVE_CTE: Lógica de encadeamento analítico. Recomenda-se execução nativa delegada ao banco.",
+    "EXTERNAL_FUNCTION_DEPENDENCY: Dependência da função aninhada 'fn_saldo_cliente'. Exige injeção de dependência modular."
+  ],
+  "parameters_analyzed": 1,
+  "tables_referenced": [],
+  "validation": {
+    "is_valid_syntax": true,
+    "ast_parsed": true,
+    "syntax_error": null,
+    "warnings": []
+  },
+  "status": "sucesso"
+}

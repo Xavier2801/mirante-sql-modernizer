@@ -1,0 +1,16 @@
+{
+  "procedure_name": "sp_transferencia_fundos",
+  "risk_flags": [
+    "CONCURRENCY_LOCK_FOR_UPDATE: Requer isolamento transacional estrito e lock pessimista no SQLAlchemy.",
+    "RAISE_EXCEPTION: Validações de negócio devem ser traduzidas para exceções personalizadas em Python."
+  ],
+  "parameters_analyzed": 3,
+  "tables_referenced": [],
+  "validation": {
+    "is_valid_syntax": true,
+    "ast_parsed": true,
+    "syntax_error": null,
+    "warnings": []
+  },
+  "status": "sucesso"
+}

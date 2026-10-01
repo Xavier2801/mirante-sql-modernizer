@@ -1,0 +1,15 @@
+{
+  "procedure_name": "sp_auditoria_contas",
+  "risk_flags": [
+    "CURSOR_DETECTED: Potencial gargalo de I/O (N+1 queries). Requer batching ou consulta em lote."
+  ],
+  "parameters_analyzed": 0,
+  "tables_referenced": [],
+  "validation": {
+    "is_valid_syntax": true,
+    "ast_parsed": true,
+    "syntax_error": null,
+    "warnings": []
+  },
+  "status": "sucesso"
+}

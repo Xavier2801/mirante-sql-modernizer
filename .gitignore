@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / Python-generated files
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+
+# Variáveis de ambiente e Segredos (CRÍTICO)
+.env
+.env.local
+.env.*.local
+
+# IDEs e Editores
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Banco de dados local / Docker volumes temporários
+*.sqlite3
+*.db
+
+# Arquivos de teste e cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs e arquivos temporários do sistema
+*.log
+.DS_Store
+Thumbs.db

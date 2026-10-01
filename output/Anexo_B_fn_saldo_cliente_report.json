@@ -1,0 +1,18 @@
+{
+  "procedure_name": "fn_saldo_cliente",
+  "risk_flags": [
+    "EXTERNAL_FUNCTION_DEPENDENCY: Dependência da função aninhada 'fn_saldo_cliente'. Exige injeção de dependência modular."
+  ],
+  "parameters_analyzed": 1,
+  "tables_referenced": [
+    "contas",
+    "v_saldo_total"
+  ],
+  "validation": {
+    "is_valid_syntax": true,
+    "ast_parsed": true,
+    "syntax_error": null,
+    "warnings": []
+  },
+  "status": "sucesso"
+}

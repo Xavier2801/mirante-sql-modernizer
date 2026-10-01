@@ -1,0 +1,18 @@
+{
+  "procedure_name": "sp_processa_fechamento",
+  "risk_flags": [
+    "RAISE_EXCEPTION: Validações de negócio devem ser traduzidas para exceções personalizadas em Python.",
+    "GET_DIAGNOSTICS_ROW_COUNT: Retorno de quantidade de registos alterados em comandos de UPDATE/INSERT em massa."
+  ],
+  "parameters_analyzed": 3,
+  "tables_referenced": [
+    "contas"
+  ],
+  "validation": {
+    "is_valid_syntax": true,
+    "ast_parsed": true,
+    "syntax_error": null,
+    "warnings": []
+  },
+  "status": "sucesso"
+}
