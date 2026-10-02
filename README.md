@@ -2,60 +2,27 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+
   <title>Mirante SQL Modernizer (PL/pgSQL -> Python 3.14)</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: #24292f;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 32px;
-    }
-    h1 { border-bottom: 2px solid #eaecef; padding-bottom: 8px; margin-top: 24px; }
-    h2 { border-bottom: 1px solid #eaecef; padding-bottom: 6px; margin-top: 20px; }
-    h3 { margin-top: 16px; }
-    pre {
-      background-color: #f6f8fa;
-      border-radius: 6px;
-      padding: 16px;
-      overflow: auto;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-      font-size: 85%;
-    }
-    code {
-      background-color: rgba(175, 184, 193, 0.2);
-      padding: 0.2em 0.4em;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 85%;
-    }
-    pre code {
-      background-color: transparent;
-      padding: 0;
-    }
-    blockquote {
-      padding: 0 1em;
-      color: #57606a;
-      border-left: 0.25em solid #0969da;
-      margin: 16px 0;
-      background: #f6f8fa;
-      border-radius: 0 6px 6px 0;
-    }
-    hr {
-      height: 0.25em;
-      padding: 0;
-      margin: 24px 0;
-      background-color: #d0d7de;
-      border: 0;
-    }
-    .badges img {
-      margin-right: 4px;
-    }
-    .text-center {
-      text-align: center;
-    }
-  </style>
+
+<br/>
+
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-orange.svg)](https://github.com/langchain-ai/langgraph)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
+[![Observability-Langfuse](https://img.shields.io/badge/observability-Langfuse_v2-purple.svg)](https://langfuse.com/)
+[![Code-Quality](https://img.shields.io/badge/tests-11%20passed-brightgreen.svg)](tests/)
+
+<br/>
+
+Solução corporativa para modernização automatizada de rotinas legadas **PL/pgSQL** (Functions e Stored Procedures) para módulos modernos em **Python 3.14**.
+
+O projeto adota uma **arquitetura híbrida (Rules + LLM)**: utiliza parsing sintático determinístico e extração semântica prévia para mitigar alucinações, acoplando um orquestrador cíclico em **LangGraph**, persistência de auditoria em **PostgreSQL**, telemetria completa via **Langfuse v2** e métricas automatizadas de avaliação estática.
+
+<br/>
+<hr/>
+<br/>
+
 </head>
 <body>
 
