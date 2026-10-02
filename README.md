@@ -380,17 +380,20 @@ O pipeline captura cada execução de rotina de forma independente, discriminand
 
 <br/>
 
-![Langfuse Traces Overview](docs/screenshots/langfuse_traces.png)
+<p align="center">
+  <img src="./docs/screenshots/langfuse_traces.png" alt="Langfuse Traces Overview" width="100%" />
+</p>
 
 <br/>
 
 ### Inspeção Detalhada da Geração — Estudo de Caso: Anexo D (`sp_transferencia_fundos`)
-Ao inspecionar a geração individual do Anexo D (rotina crítica com concorrência pessimista e operações de débito/crédito), é possível auditar o payload de entrada (SQL original enriquecido com detecção de `FOR UPDATE`), o código Python 3.14 sintetizado com transação atômica e a precisão do custo em dólares:
+Ao inspecionar a geração individual do Anexo D (rotina crítica com concorrência pessimista e operações de débito/crédito), é possível auditar o payload de entrada (SQL original enriquecido com deteção de `FOR UPDATE`), o código Python 3.14 sintetizado com transação atómica e a precisão do custo em dólares:
 
 <br/>
 
-![Langfuse Generation Detail - Anexo D](docs/screenshots/langfuse_detail.png)
-
+<p align="center">
+  <img src="./docs/screenshots/langfuse_detail.png" alt="Langfuse Generation Detail - Anexo D" width="100%" />
+</p>
 
 
 6. MÉTRICA DE EVALUATION AUTOMATIZADA (BÔNUS 3)
