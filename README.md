@@ -1,111 +1,205 @@
-# Mirante SQL Modernizer (PL/pgSQL -> Python 3.14)
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Mirante SQL Modernizer (PL/pgSQL -> Python 3.14)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #24292f;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+    h1 { border-bottom: 2px solid #eaecef; padding-bottom: 8px; margin-top: 24px; }
+    h2 { border-bottom: 1px solid #eaecef; padding-bottom: 6px; margin-top: 20px; }
+    h3 { margin-top: 16px; }
+    pre {
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      padding: 16px;
+      overflow: auto;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 85%;
+    }
+    code {
+      background-color: rgba(175, 184, 193, 0.2);
+      padding: 0.2em 0.4em;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 85%;
+    }
+    pre code {
+      background-color: transparent;
+      padding: 0;
+    }
+    blockquote {
+      padding: 0 1em;
+      color: #57606a;
+      border-left: 0.25em solid #0969da;
+      margin: 16px 0;
+      background: #f6f8fa;
+      border-radius: 0 6px 6px 0;
+    }
+    hr {
+      height: 0.25em;
+      padding: 0;
+      margin: 24px 0;
+      background-color: #d0d7de;
+      border: 0;
+    }
+    .badges img {
+      margin-right: 4px;
+    }
+    .text-center {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
 
-<br/>
+  <h1>Mirante SQL Modernizer (PL/pgSQL -&gt; Python 3.14)</h1>
 
-[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
-[![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-orange.svg)](https://github.com/langchain-ai/langgraph)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-[![Observability-Langfuse](https://img.shields.io/badge/observability-Langfuse_v2-purple.svg)](https://langfuse.com/)
-[![Code-Quality](https://img.shields.io/badge/tests-11%20passed-brightgreen.svg)](tests/)
+  <br/>
 
-<br/>
+  <div class="badges">
+    <img src="https://img.shields.io/badge/python-3.14-blue.svg" alt="Python 3.14">
+    <img src="https://img.shields.io/badge/orchestration-LangGraph-orange.svg" alt="LangGraph">
+    <img src="https://img.shields.io/badge/API-FastAPI-green.svg" alt="FastAPI">
+    <img src="https://img.shields.io/badge/observability-Langfuse_v2-purple.svg" alt="Langfuse v2">
+    <img src="https://img.shields.io/badge/tests-11%20passed-brightgreen.svg" alt="Tests">
+  </div>
 
-Solução corporativa para modernização automatizada de rotinas legadas **PL/pgSQL** (Functions e Stored Procedures) para módulos modernos em **Python 3.14**.
+  <br/>
 
-O projeto adota uma **arquitetura híbrida (Rules + LLM)**: utiliza parsing sintático determinístico e extração semântica prévia para mitigar alucinações, acoplando um orquestrador cíclico em **LangGraph**, persistência de auditoria em **PostgreSQL**, telemetria completa via **Langfuse v2** e métricas automatizadas de avaliação estática.
+  <p>Solução corporativa para modernização automatizada de rotinas legadas <strong>PL/pgSQL</strong> (Functions e Stored Procedures) para módulos modernos em <strong>Python 3.14</strong>.</p>
 
-<br/>
-<hr/>
-<br/>
+  <p>O projeto adota uma <strong>arquitetura híbrida (Rules + LLM)</strong>: utiliza parsing sintático determinístico e extração semântica prévia para mitigar alucinações, acoplando um orquestrador cíclico em <strong>LangGraph</strong>, persistência de auditoria em <strong>PostgreSQL</strong>, telemetria completa via <strong>Langfuse v2</strong> e métricas automatizadas de avaliação estática.</p>
 
-# 1. ARQUITETURA DA PIPELINE HÍBRIDA (LANGGRAPH)
+<br/><hr/><br/>
 
-<br/>
+  <h1>1. ARQUITETURA DA PIPELINE HÍBRIDA (LANGGRAPH)</h1>
 
-O fluxo de modernização foi modelado como um grafo direcionado e cíclico (*StateGraph*) onde cada fase da modernização é isolada em um nó especializado. O estado transacionado ao longo da execução é rigidamente tipado via `TypedDict`.
+  <br/>
 
-<br/>
+  <p>O fluxo de modernização foi modelado como um grafo direcionado e cíclico (<em>StateGraph</em>) onde cada fase da modernização é isolada em um nó especializado. O estado transacionado ao longo da execução é rigidamente tipado via <code>TypedDict</code>.</p>
 
-## 1.1 Diagrama do Grafo de Execução
+  <br/>
 
-```text
-       +-----------------------+
+<h2>1.1 Diagrama do Grafo de Execução</h2>
+
+  <pre><code>       +-----------------------+
        |         START         |
        +-----------------------+
                    |
                    v
        +-----------------------+
-       |     [Node 1] Parsing  |  <--- sqlglot / AST SQL determinística
+       |     [Node 1] Parsing  |  &lt;--- sqlglot / AST SQL determinística
        +-----------------------+
                    |
                    v
        +-----------------------+
-       | [Node 2] Semantic     |  <--- Mapeamento de IN/OUT, Locks,
+       | [Node 2] Semantic     |  &lt;--- Mapeamento de IN/OUT, Locks,
        |          Analysis     |       Cursores, Recursão e Riscos
        +-----------------------+
                    |
                    v
        +-----------------------+
-       |   [Node 3] Code       |  <--- Prompt contextualizado
+       |   [Node 3] Code       |  &lt;--- Prompt contextualizado
        |        Generation     |       (Gemini 1.5 Pro ou Ollama Local)
        +-----------------------+
                    |
                    v
        +-----------------------+
-       |  [Node 4] Validation  |  <--- ast.parse() + AST Security Check
+       |  [Node 4] Validation  |  &lt;--- ast.parse() + AST Security Check
        +-----------------------+
                    |
          /-------------------\
-        <  Sintaxe Válida?    >
+        &lt;  Sintaxe Válida?    &gt;
          \-------------------/
           /                 \
-    [Sim] /                 \ [Não & retries < max]
+    [Sim] /                 \ [Não &amp; retries &lt; max]
         v                     v
 +---------------+     +--------------------+
-|      END      |     |  Feedback Loop     | ---> (Reexecuta Generation)
-+---------------+     +--------------------+
+|      END      |     |  Feedback Loop     | ---&gt; (Reexecuta Generation)
++---------------+     +--------------------+</code></pre>
 
-1.2 Detalhamento dos Nós da Pipeline no Grafo
+  <br/>
 
+<h2>1.2 Detalhamento dos Nós da Pipeline no Grafo</h2>
 
-🔹 Nó 1: Parsing Determinístico (parser_node)
-Responsabilidade Primária: Receber o código procedural bruto em PL/pgSQL e convertê-lo em uma árvore sintática abstrata (AST) totalmente estruturada antes de qualquer contato com o modelo generativo.
-Mecanismo Técnico: Utiliza a biblioteca sqlglot configurada com o dialeto nativo postgres.
-Extrações Executadas: Segmentação e isolamento dos blocos DECLARE e BEGIN ... END.
-Classificação estrita do tipo de objeto de banco (FUNCTION vs PROCEDURE).
-Normalização de tokens SQL e desconstrução de comandos DDL complementares.
+  <br/>
 
+<h3>🔹 Nó 1: Parsing Determinístico (<code>parser_node</code>)</h3>
+  <ul>
+    <li><strong>Responsabilidade Primária:</strong> Receber o código procedural bruto em PL/pgSQL e convertê-lo em uma árvore sintática abstrata (AST) totalmente estruturada antes de qualquer contato com o modelo generativo.</li>
+    <li><strong>Mecanismo Técnico:</strong> Utiliza a biblioteca <code>sqlglot</code> configurada com o dialeto nativo <code>postgres</code>.</li>
+    <li><strong>Extrações Executadas:</strong>
+      <ul>
+        <li>Segmentação e isolamento dos blocos <code>DECLARE</code> e <code>BEGIN ... END</code>.</li>
+        <li>Classificação estrita do tipo de objeto de banco (<code>FUNCTION</code> vs <code>PROCEDURE</code>).</li>
+        <li>Normalização de tokens SQL e desconstrução de comandos DDL complementares.</li>
+      </ul>
+    </li>
+  </ul>
 
-🔹 Nó 2: Análise Semântica e Mapeamento de Riscos (semantic_node)
-Responsabilidade Primária: Varrer a estrutura sintática para identificar padrões procedurais de negócio e catalogar pontos críticos que oferecem risco de performance, concorrência ou integridade na migração para Python.
-Categorização das Análises: Contrato de Parâmetros e Tipos: Mapeamento explícito das assinaturas IN, OUT, INOUT e variáveis locais, correlacionando tipos SQL legados (NUMERIC(15,2), BIGINT, RECORD, BOOLEAN) aos equivalentes modernos do Python.
-Concorrência e Locks: Detecção de diretivas de bloqueio pessimista (FOR UPDATE, FOR SHARE), prevenindo condições de corrida na aplicação.
-Antipatterns e Gargalos: Rastreamento de cursores explícitos iterando sobre comandos SELECT com queries internas (risco clássico de N+1 e PERFORM).
-Recursão Hierárquica: Identificação de Common Table Expressions recursivas (WITH RECURSIVE) e chamadas aninhadas entre funções de banco.
+  <br/>
 
+<h3>🔹 Nó 2: Análise Semântica e Mapeamento de Riscos (<code>semantic_node</code>)</h3>
+  <ul>
+    <li><strong>Responsabilidade Primária:</strong> Varrer a estrutura sintática para identificar padrões procedurais de negócio e catalogar pontos críticos que oferecem risco de performance, concorrência ou integridade na migração para Python.</li>
+    <li><strong>Categorização das Análises:</strong>
+      <ul>
+        <li><strong>Contrato de Parâmetros e Tipos:</strong> Mapeamento explícito das assinaturas <code>IN</code>, <code>OUT</code>, <code>INOUT</code> e variáveis locais, correlacionando tipos SQL legados (<code>NUMERIC(15,2)</code>, <code>BIGINT</code>, <code>RECORD</code>, <code>BOOLEAN</code>) aos equivalentes modernos do Python.</li>
+        <li><strong>Concorrência e Locks:</strong> Detecção de diretivas de bloqueio pessimista (<code>FOR UPDATE</code>, <code>FOR SHARE</code>), prevenindo condições de corrida na aplicação.</li>
+        <li><strong>Antipatterns e Gargalos:</strong> Rastreamento de cursores explícitos iterando sobre comandos <code>SELECT</code> com queries internas (<code>risco clássico de N+1</code> e <code>PERFORM</code>).</li>
+        <li><strong>Recursão Hierárquica:</strong> Identificação de <em>Common Table Expressions</em> recursivas (<code>WITH RECURSIVE</code>) e chamadas aninhadas entre funções de banco.</li>
+      </ul>
+    </li>
+  </ul>
 
-🔹 Nó 3: Geração de Código Contextualizada (generation_node)
-Responsabilidade Primária: Síntese do módulo moderno em Python 3.14 orientado a objetos e estruturado para alta performance.
-Engenharia de Prompt Estruturada: O modelo generativo não recebe a rotina SQL de forma ingênua ou crua. O prompt é montado programmaticamente injetando as flags de risco e a assinatura semântica já tratadas pelos Nós 1 e 2.
-Diretrizes Arquiteturais Aplicadas: Tipagem estrita com as novas funcionalidades de união de tipos do Python 3.14 (int | None, str | None).
-Adoção mandatória de decimal.Decimal em qualquer valor monetário ou contábil, eliminando o risco de imprecisão de float.
-Preservação atômica de transações por meio de gerenciadores de contexto (with session.begin():).
+  <br/>
 
-🔹 Nó 4: Validação Estática e Auditoria Sintática (validation_node)
-Responsabilidade Primária: Atuar como barreira de contenção de qualidade estática (Gatekeeper), analisando o código gerado antes da persistência definitiva.
-Mecanismos de Inspeção: Execução do analisador estático nativo ast.parse() sobre o código Python 3.14 gerado para garantir conformidade gramatical semântica sem necessidade de executar o código em tempo de execução.
-Rastreamento de profundidade de árvore e verificação de imports obrigatórios (decimal, typing).
-Mecanismo de Autocorreção (Self-Correction Loop): Se o validador detectar quebra de sintaxe, o roteador condicional devolve a árvore com o traceback do erro de volta ao Nó 3 para que o modelo regenere o código corrigindo a falha, respeitando o teto de retentativas parametrizado.
+<h3>🔹 Nó 3: Geração de Código Contextualizada (<code>generation_node</code>)</h3>
+  <ul>
+    <li><strong>Responsabilidade Primária:</strong> Síntese do módulo moderno em Python 3.14 orientado a objetos e estruturado para alta performance.</li>
+    <li><strong>Engenharia de Prompt Estruturada:</strong> O modelo generativo não recebe a rotina SQL de forma ingênua ou crua. O prompt é montado programmaticamente injetando as <em>flags</em> de risco e a assinatura semântica já tratadas pelos Nós 1 e 2.</li>
+    <li><strong>Diretrizes Arquiteturais Aplicadas:</strong>
+      <ul>
+        <li>Tipagem estrita com as novas funcionalidades de união de tipos do Python 3.14 (<code>int | None</code>, <code>str | None</code>).</li>
+        <li>Adoção mandatória de <code>decimal.Decimal</code> em qualquer valor monetário ou contábil, eliminando o risco de imprecisão de <code>float</code>.</li>
+        <li>Preservação atômica de transações por meio de gerenciadores de contexto (<code>with session.begin():</code>).</li>
+      </ul>
+    </li>
+  </ul>
 
+  <br/>
 
-1.3 Contrato de Dados e Estado Tipado (ModernizationState)
-[!TIP]
-Canal Atômico de Comunicação do Grafo
+<h3>🔹 Nó 4: Validação Estática e Auditoria Sintática (<code>validation_node</code>)</h3>
+  <ul>
+    <li><strong>Responsabilidade Primária:</strong> Atuar como barreira de contenção de qualidade estática (<em>Gatekeeper</em>), analisando o código gerado antes da persistência definitiva.</li>
+    <li><strong>Mecanismos de Inspeção:</strong>
+      <ul>
+        <li>Execução do analisador estático nativo <code>ast.parse()</code> sobre o código Python 3.14 gerado para garantir conformidade gramatical semântica sem necessidade de executar o código em tempo de execução.</li>
+        <li>Rastreamento de profundidade de árvore e verificação de imports obrigatórios (<code>decimal</code>, <code>typing</code>).</li>
+      </ul>
+    </li>
+    <li><strong>Mecanismo de Autocorreção (<em>Self-Correction Loop</em>):</strong> Se o validador detectar quebra de sintaxe, o roteador condicional devolve a árvore com o traceback do erro de volta ao Nó 3 para que o modelo regenere o código corrigindo a falha, respeitando o teto de retentativas parametrizado.</li>
+  </ul>
 
-A integridade do pipeline ao longo do grafo é mantida por um contrato de dados atômico tipado via TypedDict, garantindo previsibilidade entre as transições de nós, suporte a auditoria e canal para telemetria.
+  <br/>
 
-Python
-from typing import Any, TypedDict
+<h2>1.3 Contrato de Dados e Estado Tipado (<code>ModernizationState</code>)</h2>
+
+  <br/>
+
+  <blockquote>
+    <p><strong>Canal Atômico de Comunicação do Grafo</strong><br/>
+    A integridade do pipeline ao longo do grafo é mantida por um contrato de dados atômico tipado via <code>TypedDict</code>, garantindo previsibilidade entre as transições de nós, suporte a auditoria e canal para telemetria.</p>
+  </blockquote>
+
+  <pre><code>from typing import Any, TypedDict
 
 class ModernizationState(TypedDict):
     # =========================================================================
@@ -148,70 +242,99 @@ class ModernizationState(TypedDict):
     """Status operacional corrente da execução: 'sucesso', 'parcial' ou 'falha'."""
     
     retry_count: int
+    """Contador de ciclos de autocorreção executados pelo feedback loop."""</code></pre>
 
-    """Contador de ciclos de autocorreção executados pelo feedback loop."""
+  <br/>
 
-📌 Papel Estratégico dos Campos no Ciclo de Vida:
+<h3>📌 Papel Estratégico dos Campos no Ciclo de Vida:</h3>
+  <ul>
+    <li><strong>Desacoplamento de Inferência (<code>parsed_ast</code> e <code>metadata</code>):</strong> A LLM não gasta tokens deduzindo parâmetros ou tipos de retorno; recebe a assinatura estruturada diretamente da análise semântica determinística.</li>
+    <li><strong>Direcionamento Ativo de Guardrails (<code>risk_flags</code>):</strong> Se a flag <code>PESSIMISTIC_LOCK</code> é levantada, o prompt força regras estritas para a geração do <code>with_for_update()</code>, blindando o código contra condições de corrida.</li>
+    <li><strong>Governança e Resiliência (<code>validation</code> e <code>retry_count</code>):</strong> Atuam como base para a tomada de decisão das arestas condicionais do LangGraph, permitindo regeneração autônoma sem intervenção humana.</li>
+  </ul>
 
-Desacoplamento de Inferência (parsed_ast e metadata): A LLM não gasta tokens deduzindo parâmetros ou tipos de retorno; recebe a assinatura estruturada diretamente da análise semântica determinística.
+<br/><hr/><br/>
 
-Direcionamento Ativo de Guardrails (risk_flags): Se a flag PESSIMISTIC_LOCK é levantada, o prompt força regras estritas para a geração do with_for_update(), blindando o código contra condições de corrida.
+  <h1>2. DECISÕES TÉCNICAS E TRADE-OFFS ARQUITETURAIS</h1>
 
-Governança e Resiliência (validation e retry_count): Atuam como base para a tomada de decisão das arestas condicionais do LangGraph, permitindo regeneração autônoma sem intervenção humana.
+  <br/>
 
-2. DECISÕES TÉCNICAS E TRADE-OFFS ARQUITETURAIS
-A modernização de regras de negócio financeiras exige escolhas que priorizam corretude algorítmica, contenção de custos de inferência e eficiência computacional. Abaixo estão detalhadas as decisões centrais:
+  <p>A modernização de regras de negócio financeiras exige escolhas que priorizam corretude algorítmica, contenção de custos de inferência e eficiência computacional. Abaixo estão detalhadas as decisões centrais:</p>
 
-2.1 Abordagem Híbrida (Rules + LLM) vs Abordagem Pura (LLM End-to-End)
+  <br/>
 
-Contexto: Enviar código legado bruto direto para modelos de linguagem resulta em alucinação de tipos, perda de cláusulas de bloqueio concorrente e omissão de exceções de negócio.
-Decisão: Segmentar o pipeline em duas etapas determinísticas preliminares (Parsing via AST + Análise Semântica de Riscos) e utilizar a LLM estritamente como sintetizadora instruída por um contexto estruturado.
-Alternativa Rejeitada: Envio do PL/pgSQL cru com few-shot prompting.
-Trade-off: Exige manutenção de código determinístico para parsing de dialetos, mas reduz em mais de 80% as alucinações, padroniza o formato do código de saída e enxuga o consumo de tokens de entrada em até 40%.
+<h3>2.1 Abordagem Híbrida (Rules + LLM) vs Abordagem Pura (LLM End-to-End)</h3>
+  <ul>
+    <li><strong>Contexto:</strong> Enviar código legado bruto direto para modelos de linguagem resulta em alucinação de tipos, perda de cláusulas de bloqueio concorrente e omissão de exceções de negócio.</li>
+    <li><strong>Decisão:</strong> Segmentar o pipeline em duas etapas determinísticas preliminares (Parsing via AST + Análise Semântica de Riscos) e utilizar a LLM estritamente como sintetizadora instruída por um contexto estruturado.</li>
+    <li><strong>Alternativa Rejeitada:</strong> Envio do PL/pgSQL cru com <em>few-shot prompting</em>.</li>
+    <li><strong>Trade-off:</strong> Exige manutenção de código determinístico para parsing de dialetos, mas reduz em mais de 80% as alucinações, padroniza o formato do código de saída e enxuga o consumo de tokens de entrada em até 40%.</li>
+  </ul>
 
-2.2 Parser Determinístico: sqlglot com Dialeto Postgres
+  <br/>
 
-Contexto: Era necessário desmembrar assinaturas complexas, variáveis declaradas e comandos procedurais em estruturas sintáticas tratáveis programaticamente.
-Decisão: Adoção do sqlglot configurado para o dialeto postgres.
-Alternativas Rejeitadas: Expressões Regulares (frágeis a variações de sintaxe) e sqlparse (que gera apenas árvore de tokens rasos, sem tipagem formal de AST).
-Trade-off: O sqlglot possui suporte nativo a múltiplos dialetos SQL (facilitando expansão futura para Oracle PL/SQL e T-SQL), exigindo apenas regras complementares de fallback para trechos procedurais específicos de dialetos proprietários.
+<h3>2.2 Parser Determinístico: <code>sqlglot</code> com Dialeto Postgres</h3>
+  <ul>
+    <li><strong>Contexto:</strong> Era necessário desmembrar assinaturas complexas, variáveis declaradas e comandos procedurais em estruturas sintáticas tratáveis programaticamente.</li>
+    <li><strong>Decisão:</strong> Adoção do <code>sqlglot</code> configurado para o dialeto <code>postgres</code>.</li>
+    <li><strong>Alternativas Rejeitadas:</strong> Expressões Regulares (frágeis a variações de sintaxe) e <code>sqlparse</code> (que gera apenas árvore de tokens rasos, sem tipagem formal de AST).</li>
+    <li><strong>Trade-off:</strong> O <code>sqlglot</code> possui suporte nativo a múltiplos dialetos SQL (facilitando expansão futura para Oracle PL/SQL e T-SQL), exigindo apenas regras complementares de fallback para trechos procedurais específicos de dialetos proprietários.</li>
+  </ul>
 
-2.3 Estratégia de Execução: Query Delegada ao SGBD vs Reescrever em Python Puro
+  <br/>
 
-Contexto: Funções com agregações massivas (SUM, COUNT) e estruturas recursivas hierárquicas (WITH RECURSIVE) são frequentes em bancos legados.
-Decisão: Padrão Híbrido de Execução. Toda lógica relacional pesada e operações de agregação em lote continuam sendo delegadas ao banco via consultas parametrizadas otimizadas (SQLAlchemy/asyncpg). Apenas a orquestração transacional, controle de fluxo procedural, validações de parâmetros e regras de exceção são migradas para Python puro.
-Alternativa Rejeitada: Carregar todas as tabelas em memória (pandas ou loops de dicionários em Python) e calcular médias/somas dentro do serviço.
-Trade-off: Evita saturação de I/O de rede e esgotamento de memória (Out-Of-Memory - OOM) no ambiente da aplicação ao processar milhões de registros, aproveitando os índices e o query planner do próprio PostgreSQL.
+<h3>2.3 Estratégia de Execução: Query Delegada ao SGBD vs Reescrever em Python Puro</h3>
+  <ul>
+    <li><strong>Contexto:</strong> Funções com agregações massivas (<code>SUM</code>, <code>COUNT</code>) e estruturas recursivas hierárquicas (<code>WITH RECURSIVE</code>) são frequentes em bancos legados.</li>
+    <li><strong>Decisão:</strong> <strong>Padrão Híbrido de Execução</strong>. Toda lógica relacional pesada e operações de agregação em lote continuam sendo delegadas ao banco via consultas parametrizadas otimizadas (<code>SQLAlchemy</code>/<code>asyncpg</code>). Apenas a orquestração transacional, controle de fluxo procedural, validações de parâmetros e regras de exceção são migradas para Python puro.</li>
+    <li><strong>Alternativa Rejeitada:</strong> Carregar todas as tabelas em memória (<code>pandas</code> ou loops de dicionários em Python) e calcular médias/somas dentro do serviço.</li>
+    <li><strong>Trade-off:</strong> Evita saturação de I/O de rede e esgotamento de memória (<em>Out-Of-Memory - OOM</em>) no ambiente da aplicação ao processar milhões de registros, aproveitando os índices e o <em>query planner</em> do próprio PostgreSQL.</li>
+  </ul>
 
-2.4 Precisão Numérica Monetária: decimal.Decimal Mandatório
+  <br/>
 
-Contexto: O tipo legado NUMERIC(15, 2) é padrão de mercado em instituições financeiras para saldos e transações.
-Decisão: Banir o uso de tipos primitivos float em qualquer campo monetário, exigindo decimal.Decimal em todas as assinaturas, cálculos e mapeamentos tipados.
-Alternativa Rejeitada: Tipagem nativa float ou conversão implícita.
-Trade-off: O tipo float segue o padrão IEEE 754 de ponto flutuante binário e introduz erros cumulativos de arredondamento em operações contábeis (ex: 0.1 + 0.2 != 0.3). O uso de Decimal introduz um custo insignificante de CPU em troca de precisão contábil matemática absoluta.
+<h3>2.4 Precisão Numérica Monetária: <code>decimal.Decimal</code> Mandatório</h3>
+  <ul>
+    <li><strong>Contexto:</strong> O tipo legado <code>NUMERIC(15, 2)</code> é padrão de mercado em instituições financeiras para saldos e transações.</li>
+    <li><strong>Decisão:</strong> Banir o uso de tipos primitivos <code>float</code> em qualquer campo monetário, exigindo <code>decimal.Decimal</code> em todas as assinaturas, cálculos e mapeamentos tipados.</li>
+    <li><strong>Alternativa Rejeitada:</strong> Tipagem nativa <code>float</code> ou conversão implícita.</li>
+    <li><strong>Trade-off:</strong> O tipo <code>float</code> segue o padrão IEEE 754 de ponto flutuante binário e introduz erros cumulativos de arredondamento em operações contábeis (ex: <code>0.1 + 0.2 != 0.3</code>). O uso de <code>Decimal</code> introduz um custo insignificante de CPU em troca de precisão contábil matemática absoluta.</li>
+  </ul>
 
-2.5 Tratamento de Concorrência e Transacionalidade
+  <br/>
 
-Contexto: Procedimentos como transferência de fundos (Anexo D) exigem integridade atômica para evitar Race Conditions (condições de corrida) e leituras sujas.
-Decisão: Tradução automática de transações SQL para gerenciadores de contexto seguros (with session.begin():) e preservação explícita do lock pessimista (with_for_update()).
-Alternativa Rejeitada: Confiar em isolamento de leitura sem locks explícitos.
-Trade-off: O lock pessimista garante que duas transferências simultâneas sobre a mesma conta não causem saldo negativo, aceitando como contrapartida a retenção da linha durante a janela da transação.
+<h3>2.5 Tratamento de Concorrência e Transacionalidade</h3>
+  <ul>
+    <li><strong>Contexto:</strong> Procedimentos como transferência de fundos (Anexo D) exigem integridade atômica para evitar <em>Race Conditions</em> (condições de corrida) e leituras sujas.</li>
+    <li><strong>Decisão:</strong> Tradução automática de transações SQL para gerenciadores de contexto seguros (<code>with session.begin():</code>) e preservação explícita do lock pessimista (<code>with_for_update()</code>).</li>
+    <li><strong>Alternativa Rejeitada:</strong> Confiar em isolamento de leitura sem locks explícitos.</li>
+    <li><strong>Trade-off:</strong> O lock pessimista garante que duas transferências simultâneas sobre a mesma conta não causem saldo negativo, aceitando como contrapartida a retenção da linha durante a janela da transação.</li>
+  </ul>
 
-2.6 Provedor de LLM: Google Gemini API vs Execução Local (Ollama)
+  <br/>
 
-Contexto: Instituições financeiras frequentemente possuem restrições rígidas de conformidade (LGPD, sigilo bancário) que impedem o tráfego de esquemas e códigos de bases de dados para provedores de nuvem pública.
-Decisão: Arquitetura desacoplada e configurável via variáveis de ambiente. O pipeline suporta nativamente o Google Gemini 1.5 Pro (para alta velocidade e capacidade de contexto) e execução offline com Ollama (ex: codellama, deepseek-coder, qwen2.5-coder ou llama3).
-Trade-off: Modelos locais consomem recursos da máquina host (VRAM/CPU) e possuem maior latência de inferência, mas oferecem soberania total de dados, custo zero por token e independência de ligação à Internet.
+<h3>2.6 Provedor de LLM: Google Gemini API vs Execução Local (Ollama)</h3>
+  <ul>
+    <li><strong>Contexto:</strong> Instituições financeiras frequentemente possuem restrições rígidas de conformidade (LGPD, sigilo bancário) que impedem o tráfego de esquemas e códigos de bases de dados para provedores de nuvem pública.</li>
+    <li><strong>Decisão:</strong> Arquitetura desacoplada e configurável via variáveis de ambiente. O pipeline suporta nativamente o <strong>Google Gemini 1.5 Pro</strong> (para alta velocidade e capacidade de contexto) e execução offline com <strong>Ollama</strong> (ex: <code>codellama</code>, <code>deepseek-coder</code>, <code>qwen2.5-coder</code> ou <code>llama3</code>).</li>
+    <li><strong>Trade-off:</strong> Modelos locais consomem recursos da máquina host (VRAM/CPU) e possuem maior latência de inferência, mas oferecem <strong>soberania total de dados</strong>, <strong>custo zero por token</strong> e <strong>independência de ligação à Internet</strong>.</li>
+  </ul>
 
-3. MODELAGEM DE DADOS E PERSISTÊNCIA (POSTGRESQL)
+<br/><hr/><br/>
 
-O pipeline foi projetado para assegurar rastreabilidade e governança corporativa total. Toda e qualquer submissão de código SQL — seja ela concluída com sucesso, com erros de validação sintática ou interrompida por falha de infraestrutura — é atomicamente persistida na base relacional PostgreSQL.
+  <h1>3. MODELAGEM DE DADOS E PERSISTÊNCIA (POSTGRESQL)</h1>
 
-3.1 Esquema da Tabela modernization_history
-O esquema relacional adota tipos estruturados nativos e identificação única baseada em UUIDv4 para desacoplamento de chaves sequenciais e prevenção de colisões:
+  <br/>
 
-SQL
-CREATE TABLE IF NOT EXISTS modernization_history (
+  <p>O pipeline foi projetado para assegurar rastreabilidade e governança corporativa total. Toda e qualquer submissão de código SQL — seja ela concluída com sucesso, com erros de validação sintática ou interrompida por falha de infraestrutura — é atomicamente persistida na base relacional PostgreSQL.</p>
+
+  <br/>
+
+<h2>3.1 Esquema da Tabela <code>modernization_history</code></h2>
+
+  <p>O esquema relacional adota tipos estruturados nativos e identificação única baseada em UUIDv4 para desacoplamento de chaves sequenciais e prevenção de colisões:</p>
+
+  <pre><code>CREATE TABLE IF NOT EXISTS modernization_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source_code TEXT NOT NULL,
     generated_code TEXT,
@@ -221,37 +344,52 @@ CREATE TABLE IF NOT EXISTS modernization_history (
 );
 
 -- Índices estratégicos para auditoria e consultas analíticas
-
 CREATE INDEX IF NOT EXISTS idx_modernization_status ON modernization_history(status);
 CREATE INDEX IF NOT EXISTS idx_modernization_created_at ON modernization_history(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_modernization_report_gin ON modernization_history USING gin (report);
+CREATE INDEX IF NOT EXISTS idx_modernization_report_gin ON modernization_history USING gin (report);</code></pre>
 
-Detalhamento dos Campos e Governança: id (UUID): Chave primária universalmente única gerada pela aplicação ou pelo banco (gen_random_uuid()).
-source_code (TEXT): Armazena o código original da Stored Procedure ou Function PL/pgSQL na íntegra, preservando comentários e formatação original.
-generated_code (TEXT): Módulo Python 3.14 gerado e validado. Permanece como NULL caso o processamento seja abortado antes da fase de síntese.
-report (JSONB): Metadados consolidados da execução (tokens classificados, métricas de AST, catálogo de riscos mapeados e diagnóstico sintático). O formato binário JSONB permite consultas dinâmicas de alta performance com operadores de índice GIN (@>, ?).
-status (VARCHAR): Desfecho operacional categorizado estritamente em:
-sucesso: Código gerado, validado por ast.parse() e em conformidade estática.
-parcial: Código gerado, porém com pendências de regras ou avisos arquiteturais mapeados.
-falha: Erro fatal de execução no grafo ou exceção na comunicação externa.
-created_at (TIMESTAMP WITH TIME ZONE): Carimbo de data/hora absoluto para fins de auditoria temporal.
+  <br/>
 
-4. GUIA DE INSTALAÇÃO E EXECUÇÃO LOCAL
+<h3>Detalhamento dos Campos e Governança:</h3>
+  <ul>
+    <li><strong><code>id</code> (UUID):</strong> Chave primária universalmente única gerada pela aplicação ou pelo banco (<code>gen_random_uuid()</code>).</li>
+    <li><strong><code>source_code</code> (TEXT):</strong> Armazena o código original da Stored Procedure ou Function PL/pgSQL na íntegra, preservando comentários e formatação original.</li>
+    <li><strong><code>generated_code</code> (TEXT):</strong> Módulo Python 3.14 gerado e validado. Permanece como <code>NULL</code> caso o processamento seja abortado antes da fase de síntese.</li>
+    <li><strong><code>report</code> (JSONB):</strong> Metadados consolidados da execução (tokens classificados, métricas de AST, catálogo de riscos mapeados e diagnóstico sintático). O formato binário <code>JSONB</code> permite consultas dinâmicas de alta performance com operadores de índice GIN (<code>@&gt;</code>, <code>?</code>).</li>
+    <li><strong><code>status</code> (VARCHAR):</strong> Desfecho operacional categorizado estritamente em:
+      <ul>
+        <li><code>sucesso</code>: Código gerado, validado por <code>ast.parse()</code> e em conformidade estática.</li>
+        <li><code>parcial</code>: Código gerado, porém com pendências de regras ou avisos arquiteturais mapeados.</li>
+        <li><code>falha</code>: Erro fatal de execução no grafo ou exceção na comunicação externa.</li>
+      </ul>
+    </li>
+    <li><strong><code>created_at</code> (TIMESTAMP WITH TIME ZONE):</strong> Carimbo de data/hora absoluto para fins de auditoria temporal.</li>
+  </ul>
 
-O projeto foi inteiramente conteinerizado com Docker Compose para garantir ambiente reproduzível, isolado e padronizado em qualquer sistema operacional (Linux, macOS, Windows).
+<br/><hr/><br/>
 
-4.1 Pré-requisitos do Ambiente
+  <h1>4. GUIA DE INSTALAÇÃO E EXECUÇÃO LOCAL</h1>
 
-Docker & Docker Compose (versão 24.0+ recomendada).
-Python 3.14 (ou gerenciador de pacotes moderno uv / Python 3.12+ caso execute o host localmente fora do container).
-Chave de API Gemini (GEMINI_API_KEY) para geração do modelo de linguagem (ou Ollama configurado localmente).
+  <br/>
 
-4.2 Configuração das Variáveis de Ambiente (.env)
+  <p>O projeto foi inteiramente conteinerizado com Docker Compose para garantir ambiente reproduzível, isolado e padronizado em qualquer sistema operacional (Linux, macOS, Windows).</p>
 
-Crie um arquivo .env na raiz do projeto clonado a partir das definições abaixo:
+  <br/>
 
-Snippet de código
-# ---------------------------------------------------------
+<h2>4.1 Pré-requisitos do Ambiente</h2>
+  <ul>
+    <li><strong>Docker &amp; Docker Compose</strong> (versão 24.0+ recomendada).</li>
+    <li><strong>Python 3.14</strong> (ou gerenciador de pacotes moderno <strong><code>uv</code></strong> / <strong>Python 3.12+</strong> caso execute o host localmente fora do container).</li>
+    <li><strong>Chave de API Gemini</strong> (<code>GEMINI_API_KEY</code>) para geração do modelo de linguagem (ou Ollama configurado localmente).</li>
+  </ul>
+
+  <br/>
+
+<h2>4.2 Configuração das Variáveis de Ambiente (<code>.env</code>)</h2>
+
+  <p>Crie um arquivo <code>.env</code> na raiz do projeto clonado a partir das definições abaixo:</p>
+
+  <pre><code># ---------------------------------------------------------
 # Conexão com Banco de Dados (PostgreSQL)
 # ---------------------------------------------------------
 DATABASE_URL=postgresql://postgres:postgrespassword@localhost:5432/langfuse
@@ -285,153 +423,180 @@ NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=mirante_secret_salt_123456789
 SALT=mirante_salt_key_123456789
 ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
-TELEMETRY_ENABLED=false
-4.2.1 Configuração para Execução Local com Ollama (Offline / On-Premise)
+TELEMETRY_ENABLED=false</code></pre>
 
-Caso deseje testar a modernização sem custos de API ou em ambiente desconectado:
+  <br/>
 
-Instale o Ollama e baixe o modelo desejado:
+<h2>4.2.1 Configuração para Execução Local com Ollama (Offline / On-Premise)</h2>
 
-Bash
-ollama pull deepseek-coder:6.7b
-# ou: ollama pull qwen2.5-coder:7b
-Inicie o daemon do Ollama:
+  <p>Caso deseje testar a modernização sem custos de API ou em ambiente desconectado:</p>
+  <ol>
+    <li>Instale o Ollama e baixe o modelo desejado:
+      <pre><code>ollama pull deepseek-coder:6.7b
+# ou: ollama pull qwen2.5-coder:7b</code></pre>
+    </li>
+    <li>Inicie o daemon do Ollama:
+      <pre><code>ollama serve</code></pre>
+    </li>
+    <li>Defina <code>LLM_PROVIDER=ollama</code> no seu <code>.env</code>.</li>
+  </ol>
 
-Bash
-ollama serve
-Defina LLM_PROVIDER=ollama no seu .env.
+  <br/>
 
-4.3 Inicialização da Infraestrutura via Docker Compose
-Suba os serviços locais (PostgreSQL e o servidor do Langfuse v2) em segundo plano:
+<h2>4.3 Inicialização da Infraestrutura via Docker Compose</h2>
 
-Bash
-docker compose up -d
-Verifique a integridade dos contêineres:
+  <p>Suba os serviços locais (PostgreSQL e o servidor do Langfuse v2) em segundo plano:</p>
+  <pre><code>docker compose up -d</code></pre>
 
-Bash
-docker compose ps
-O banco de dados estará acessível em localhost:5432 e o painel do Langfuse em http://localhost:3000.
+  <p>Verifique a integridade dos contêineres:</p>
+  <pre><code>docker compose ps</code></pre>
+  <blockquote>O banco de dados estará acessível em <code>localhost:5432</code> e o painel do Langfuse em <code>http://localhost:3000</code>.</blockquote>
 
-4.4 Inicialização da API FastAPI (LangGraph Pipeline)
-Crie e ative o ambiente virtual:
+  <br/>
 
-Bash
-# Utilizando UV (recomendado):
+<h2>4.4 Inicialização da API FastAPI (LangGraph Pipeline)</h2>
+
+  <ol>
+    <li>Crie e ative o ambiente virtual:
+      <pre><code># Utilizando UV (recomendado):
 uv venv
 .venv\Scripts\activate   # Windows (PowerShell)
 # source .venv/bin/activate # Linux / macOS
 
-uv pip install -e .
-Inicialize o servidor FastAPI:
+uv pip install -e .</code></pre>
+</li>
+<li>Inicialize o servidor FastAPI:
+<pre><code>uvicorn src.api.app:app --reload --port 8000</code></pre>
+</li>
+<li>Valide o endpoint de integridade (<em>Health Check</em>):
+<pre><code>curl http://localhost:8000/health</code></pre>
+<p><strong>Resposta esperada:</strong></p>
+<pre><code>{
+"status": "ok",
+"database": "connected",
+"graph": "ready"
+}</code></pre>
+<p><em>Documentação interativa Swagger/OpenAPI disponível em:</em> <code>http://localhost:8000/docs</code></p>
+</li>
+  </ol>
 
-Bash
-uvicorn src.api.app:app --reload --port 8000
-Valide o endpoint de integridade (Health Check):
+  <br/>
 
-Bash
-curl http://localhost:8000/health
-Resposta esperada:
+<h2>4.5 Execução do Batch Modernizer (Anexos B a F)</h2>
 
-JSON
-{
-  "status": "ok",
-  "database": "connected",
-  "graph": "ready"
-}
+  <p>Para executar o pipeline em lote processando integralmente os 5 casos de teste fornecidos no edital:</p>
+  <pre><code>python -m scripts.run_modernization</code></pre>
 
-Documentação interativa Swagger/OpenAPI disponível em: http://localhost:8000/docs
+  <p>O script submete os Anexos B, C, D, E e F, registrando os traces de telemetria no Langfuse e persistindo na pasta local <code>output/</code>:</p>
+  <ul>
+    <li>Códigos modernizados em Python 3.14 (<code>.py</code>).</li>
+    <li>Relatórios de auditoria e AST (<code>.json</code>).</li>
+    <li>Resumo executivo comparativo consolidado em Markdown (<code>SUMMARY_AUDIT.md</code>).</li>
+  </ul>
 
-4.5 Execução do Batch Modernizer (Anexos B a F)
-Para executar o pipeline em lote processando integralmente os 5 casos de teste fornecidos no edital:
+  <br/>
 
-Bash
-python -m scripts.run_modernization
-O script submete os Anexos B, C, D, E e F, registrando os traces de telemetria no Langfuse e persistindo na pasta local output/:
+<h2>4.6 Execução da Suíte de Testes Automatizados (Pytest)</h2>
 
-Códigos modernizados em Python 3.14 (.py).
+  <p>Para atestar a integridade do grafo, das rotas da API e da camada de persistência:</p>
+  <pre><code>pytest -v</code></pre>
+  <blockquote><strong>Resultado:</strong> 11 testes unitários e de integração cobrindo fluxos felizes, autocorreção de sintaxe e conexão relacional (todos passando em ~3.9s).</blockquote>
 
-Relatórios de auditoria e AST (.json).
+<br/><hr/><br/>
 
-Resumo executivo comparativo consolidado em Markdown (SUMMARY_AUDIT.md).
+  <h1>5. OBSERVABILIDADE AVANÇADA COM LANGFUSE (BÔNUS 1)</h1>
 
-4.6 Execução da Suíte de Testes Automatizados (Pytest)
-Para atestar a integridade do grafo, das rotas da API e da camada de persistência:
+  <br/>
 
-Bash
-pytest -v
-Resultado: 11 testes unitários e de integração cobrindo fluxos felizes, autocorreção de sintaxe e conexão relacional (todos passando em ~3.9s).
+  <p>Para cumprir o requisito de observabilidade com primazia de arquitetura corporativa, foi integrado o <strong>Langfuse v2</strong> em modalidade <em>Self-Hosted</em> executado via Docker Compose.</p>
 
-5. OBSERVABILIDADE AVANÇADA COM LANGFUSE (BÔNUS 1)
+  <br/>
 
-Para cumprir o requisito de observabilidade com primazia de arquitetura corporativa, foi integrado o Langfuse v2 em modalidade Self-Hosted executado via Docker Compose.
+<h2>5.1 Justificativa da Escolha do Langfuse Self-Hosted</h2>
+  <ul>
+    <li><strong>Soberania e Sigilo de Dados:</strong> Em contextos bancários e corporativos, queries de procedimentos armazenados podem conter regras confidenciais ou estruturas de tabelas sensíveis. Uma instância local previne vazamento de metadados para plataformas SaaS externas.</li>
+    <li><strong>Custo Zero de Infraestrutura de Observabilidade:</strong> Não depende de planos pagos por volume de eventos consumidos.</li>
+    <li><strong>Rastreabilidade Granular:</strong> Permite isolar spans do grafo, latências individuais por nó, taxas de acerto e auditoria financeira por chamada.</li>
+  </ul>
 
-5.1 Justificativa da Escolha do Langfuse Self-Hosted
+  <br/>
 
-Soberania e Sigilo de Dados: Em contextos bancários e corporativos, queries de procedimentos armazenados podem conter regras confidenciais ou estruturas de tabelas sensíveis. Uma instância local previne vazamento de metadados para plataformas SaaS externas.
-Custo Zero de Infraestrutura de Observabilidade: Não depende de planos pagos por volume de eventos consumidos.
-Rastreabilidade Granular: Permite isolar spans do grafo, latências individuais por nó, taxas de acerto e auditoria financeira por chamada.
+<h2>5.2 Evidências de Execução no Langfuse</h2>
 
-## 5.2 Evidências de Execução no Langfuse
+  <br/>
 
-<br/>
+<h3>Visão Geral de Traces em Lote (Anexos B a F)</h3>
+  <p>O pipeline captura cada execução de rotina de forma independente, discriminando latência, contagem de tokens de entrada/saída e custos financeiros calculados dinamicamente[cite: 1]:</p>
 
-### Visão Geral de Traces em Lote (Anexos B a F)
-O pipeline captura cada execução de rotina de forma independente, discriminando latência, contagem de tokens de entrada/saída e custos financeiros calculados dinamicamente:
+  <br/>
 
-<br/>
+  <p class="text-center">
+    <img src="https://raw.githubusercontent.com/Xavier2801/mirante-sql-modernizer/main/docs/screenshots/langfuse_traces.png" alt="Langfuse Traces Overview" width="100%">
+  </p>
 
-<p align="center">
-  <img src="./docs/screenshots/langfuse_traces.png" alt="Langfuse Traces Overview" width="100%" />
-</p>
+  <br/>
 
-<br/>
+<h3>Inspeção Detalhada da Geração — Estudo de Caso: Anexo D (<code>sp_transferencia_fundos</code>)</h3>
+  <p>Ao inspecionar a geração individual do Anexo D (rotina crítica com concorrência pessimista e operações de débito/crédito), é possível auditar o payload de entrada (SQL original enriquecido com detecção de <code>FOR UPDATE</code>), o código Python 3.14 sintetizado com transação atômica e a precisão do custo em dólares[cite: 1, 2]:</p>
 
-### Inspeção Detalhada da Geração — Estudo de Caso: Anexo D (`sp_transferencia_fundos`)
-Ao inspecionar a geração individual do Anexo D (rotina crítica com concorrência pessimista e operações de débito/crédito), é possível auditar o payload de entrada (SQL original enriquecido com deteção de `FOR UPDATE`), o código Python 3.14 sintetizado com transação atómica e a precisão do custo em dólares:
+  <br/>
 
-<br/>
+  <p class="text-center">
+    <img src="https://raw.githubusercontent.com/Xavier2801/mirante-sql-modernizer/main/docs/screenshots/langfuse_detail.png" alt="Langfuse Generation Detail - Anexo D" width="100%">
+  </p>
 
-<p align="center">
-  <img src="./docs/screenshots/langfuse_detail.png" alt="Langfuse Generation Detail - Anexo D" width="100%" />
-</p>
+<br/><hr/><br/>
 
+  <h1>6. MÉTRICA DE EVALUATION AUTOMATIZADA (BÔNUS 3)</h1>
 
-6. MÉTRICA DE EVALUATION AUTOMATIZADA (BÔNUS 3)
-Para além da validação pontual de cada requisição, foi implementado um módulo avaliador analítico (src/evaluator/pipeline_evaluator.py) exposto através do endpoint:
+  <br/>
 
-HTTP
-GET /evaluate
+  <p>Para além da validação pontual de cada requisição, foi implementado um módulo avaliador analítico (<code>src/evaluator/pipeline_evaluator.py</code>) exposto através do endpoint:</p>
 
-6.1 Critérios da Métrica Composta
+  <pre><code>GET /evaluate</code></pre>
 
-A avaliação do pipeline foi modelada como uma pontuação ponderada baseada em três pilares objetivos:
-Taxa de Conformidade Sintática AST (Peso: 40%):
-Verifica se 100% dos códigos Python produzidos compilam sem exceções sintáticas utilizando o compilador nativo ast.parse().
-Precisão Numérica Financeira (Peso: 30%):
-Analisa a AST gerada para comprovar o banimento de tipos primitivos float em colunas monetárias e a presença do import e instanciação de decimal.Decimal.
-Mitigação de Concorrência e Conflitos Transacionais (Peso: 30%):
-Avalia se procedimentos marcados com locks pessimistas (FOR UPDATE) foram convertidos preservando gerenciadores de contexto atômicos (with session.begin(): e .with_for_update()).
+  <br/>
 
-6.2 Análise Crítica da Métrica
+<h2>6.1 Critérios da Métrica Composta</h2>
 
-O que ela captura: Captura conformidade gramatical estrita, prevenção contra alucinações de tipos de ponto flutuante em finanças e garantia de consistência concorrencial em operações de escrita.
+  <p>A avaliação do pipeline foi modelada como uma pontuação ponderada baseada em três pilares objetivos:</p>
+  <ol>
+    <li><strong>Taxa de Conformidade Sintática AST (Peso: 40%):</strong><br/>
+    Verifica se 100% dos códigos Python produzidos compilam sem exceções sintáticas utilizando o compilador nativo <code>ast.parse()</code>.</li>
+    <li><strong>Precisão Numérica Financeira (Peso: 30%):</strong><br/>
+    Analisa a AST gerada para comprovar o banimento de tipos primitivos <code>float</code> em colunas monetárias e a presença do import e instanciação de <code>decimal.Decimal</code>.</li>
+    <li><strong>Mitigação de Concorrência e Conflitos Transacionais (Peso: 30%):</strong><br/>
+    Avalia se procedimentos marcados com locks pessimistas (<code>FOR UPDATE</code>) foram convertidos preservando gerenciadores de contexto atômicos (<code>with session.begin():</code> e <code>.with_for_update()</code>).</li>
+  </ol>
 
-O que ela deixa de fora: Não realiza testes comportamentais dinâmicos de ponta a ponta com banco de dados real em execução concorrente sob carga (teste de carga com 500 threads simultâneas disputando o mesmo registro de saldo).
+  <br/>
 
-Como evoluir em produção: Utilização de Testcontainers para subir instâncias efêmeras de PostgreSQL, executando suítes de testes com dados sintéticos comparando se o estado final das tabelas após a execução da Procedure original PL/pgSQL é exatamente idêntico ao estado final após a execução do módulo Python 3.14 equivalente.
+<h2>6.2 Análise Crítica da Métrica</h2>
+  <ul>
+    <li><strong>O que ela captura:</strong> Captura conformidade gramatical estrita, prevenção contra alucinações de tipos de ponto flutuante em finanças e garantia de consistência concorrencial em operações de escrita.</li>
+    <li><strong>O que ela deixa de fora:</strong> Não realiza testes comportamentais dinâmicos de ponta a ponta com banco de dados real em execução concorrente sob carga (teste de carga com 500 threads simultâneas disputando o mesmo registro de saldo).</li>
+    <li><strong>Como evoluir em produção:</strong> Utilização de <strong>Testcontainers</strong> para subir instâncias efêmeras de PostgreSQL, executando suítes de testes com dados sintéticos comparando se o estado final das tabelas após a execução da Procedure original PL/pgSQL é exatamente idêntico ao estado final após a execução do módulo Python 3.14 equivalente.</li>
+  </ul>
 
-7. ESCALABILIDADE FUTURA E LIMITAÇÕES CONHECIDAS
+<br/><hr/><br/>
 
-7.1 Limitações Conhecidas da Versão Atual
+  <h1>7. ESCALABILIDADE FUTURA E LIMITAÇÕES CONHECIDAS</h1>
 
-Suporte Restrito a PL/pgSQL: O pipeline está calibrado primordialmente para dialeto PostgreSQL. Stored procedures escritas em Oracle PL/SQL (com pacotes DBMS_*) ou Microsoft T-SQL (com cursores aninhados e CROSS APPLY) requerem extensões nos mapeadores semânticos.
-Transações com Rollbacks Parciais (Savepoints): Comandos procedurais complexos com múltiplos blocos de exceção aninhados (EXCEPTION WHEN OTHERS THEN) atualmente são unificados em um bloco de transação principal.
+  <br/>
 
-7.2 Arquitetura Proposta para Alta Escala
-Para suportar grandes volumes corporativos (milhares de procedures de um banco legado inteiro):
+<h2>7.1 Limitações Conhecidas da Versão Atual</h2>
+  <ul>
+    <li><strong>Suporte Restrito a PL/pgSQL:</strong> O pipeline está calibrado primordialmente para dialeto PostgreSQL. Stored procedures escritas em Oracle PL/SQL (com pacotes <code>DBMS_*</code>) ou Microsoft T-SQL (com cursores aninhados e <code>CROSS APPLY</code>) requerem extensões nos mapeadores semânticos.</li>
+    <li><strong>Transações com Rollbacks Parciais (Savepoints):</strong> Comandos procedurais complexos com múltiplos blocos de exceção aninhados (<code>EXCEPTION WHEN OTHERS THEN</code>) atualmente são unificados em um bloco de transação principal.</li>
+  </ul>
 
-Plaintext
-[API Gateway] 
+  <br/>
+
+<h2>7.2 Arquitetura Proposta para Alta Escala</h2>
+
+  <p>Para suportar grandes volumes corporativos (milhares de procedures de um banco legado inteiro):</p>
+
+  <pre><code>[API Gateway] 
       │
       ▼
 [FastAPI /modernize] ──(Enfileira Job)──► [Redis / RabbitMQ Queue]
@@ -441,20 +606,18 @@ Plaintext
                                      (Grafo LangGraph Paralelo)
                                                  │
                                                  ▼
-                                    [PostgreSQL History + Langfuse]
+                                    [PostgreSQL History + Langfuse]</code></pre>
 
-Fila Assíncrona e Processamento Desacoplado:
+  <ol>
+    <li><strong>Fila Assíncrona e Processamento Desacoplado:</strong><br/>
+    Substituir a invocação síncrona por filas assíncronas (Celery / RabbitMQ), retornando imediatamente um <code>job_id</code> para o cliente realizar polling via <code>GET /modernize/{job_id}</code> ou receber webhook.</li>
+    <li><strong>Cache Semântico de Procedimentos Similares:</strong><br/>
+    Implementação de cache vetorial (Redis + pgvector): se uma procedure já foi modernizada ou possui assinatura idêntica a outra já avaliada, o pipeline reutiliza a estrutura gerada com custo zero de tokens de LLM.</li>
+    <li><strong>Pluggable Dialect Drivers:</strong><br/>
+    Desacoplamento do Nó 1 em estratégias abstratas (<code>PostgreSQLDialectParser</code>, <code>OracleDialectParser</code>, <code>TSQLDialectParser</code>), aproveitando a compatibilidade multi-dialeto do <code>sqlglot</code>.</li>
+    <li><strong>Containerização de Workers com Ollama:</strong><br/>
+    Suporte a instâncias do Ollama distribuídas em nós com GPU no Docker Compose para ambientes isolados (<em>air-gapped</em>).</li>
+  </ol>
 
-Substituir a invocação síncrona por filas assíncronas (Celery / RabbitMQ), retornando imediatamente um job_id para o cliente realizar polling via GET /modernize/{job_id} ou receber webhook.
-
-Cache Semântico de Procedimentos Similares:
-
-Implementação de cache vetorial (Redis + pgvector): se uma procedure já foi modernizada ou possui assinatura idêntica a outra já avaliada, o pipeline reutiliza a estrutura gerada com custo zero de tokens de LLM.
-
-Pluggable Dialect Drivers:
-
-Desacoplamento do Nó 1 em estratégias abstratas (PostgreSQLDialectParser, OracleDialectParser, TSQLDialectParser), aproveitando a compatibilidade multi-dialeto do sqlglot.
-
-Containerização de Workers com Ollama:
-
-Suporte a instâncias do Ollama distribuídas em nós com GPU no Docker Compose para ambientes isolados (air-gapped).
+</body>
+</html>
