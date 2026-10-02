@@ -144,50 +144,6 @@
     A integridade do pipeline ao longo do grafo é mantida por um contrato de dados atômico tipado via <code>TypedDict</code>, garantindo previsibilidade entre as transições de nós, suporte a auditoria e canal para telemetria.</p>
   </blockquote>
 
-  <pre><code>from typing import Any, TypedDict
-
-class ModernizationState(TypedDict):
-    # =========================================================================
-    # 1. ENTRADAS DO PIPELINE
-    # =========================================================================
-    source_code: str
-    """Código original da Function ou Stored Procedure PL/pgSQL submetido."""
-    
-    schema_context: str | None
-    """DDL complementar, catálogo de tabelas ou contexto relacional auxiliar."""
-
-    # =========================================================================
-    # 2. ENRIQUECIMENTO DETERMINÍSTICO (NÓS 1 E 2)
-    # =========================================================================
-    parsed_ast: dict[str, Any]
-    """Representação estruturada em AST gerada via sqlglot."""
-    
-    metadata: dict[str, Any]
-    """Metadados extraídos: nome da rotina, parâmetros IN/OUT e tipo de retorno."""
-    
-    risk_flags: list[str]
-    """Flags de riscos identificados (ex.: 'PESSIMISTIC_LOCK', 'CURSOR_N_PLUS_ONE')."""
-
-    # =========================================================================
-    # 3. SÍNTESE E DIAGNÓSTICO (NÓS 3 E 4)
-    # =========================================================================
-    generated_code: str | None
-    """Código moderno em Python 3.14 sintetizado pelo modelo generativo."""
-    
-    validation: dict[str, Any]
-    """Diagnóstico do ast.parse: conformidade sintática, erros e nós visitados."""
-    
-    report: dict[str, Any]
-    """Relatório estruturado consolidando as decisões de todas as etapas (JSONB)."""
-
-    # =========================================================================
-    # 4. CONTROLE DE FLUXO E RESILIÊNCIA DO GRAFO
-    # =========================================================================
-    status: str
-    """Status operacional corrente da execução: 'sucesso', 'parcial' ou 'falha'."""
-    
-    retry_count: int
-    """Contador de ciclos de autocorreção executados pelo feedback loop."""</code></pre>
 
   <br/>
 
@@ -524,45 +480,6 @@ t
   </ul>
 
 <br/><hr/><br/>
-
-  <h1>7. ESCALABILIDADE FUTURA E LIMITAÇÕES CONHECIDAS</h1>
-
-  <br/>
-
-<h2>7.1 Limitações Conhecidas da Versão Atual</h2>
-  <ul>
-    <li><strong>Suporte Restrito a PL/pgSQL:</strong> O pipeline está calibrado primordialmente para dialeto PostgreSQL. Stored procedures escritas em Oracle PL/SQL (com pacotes <code>DBMS_*</code>) ou Microsoft T-SQL (com cursores aninhados e <code>CROSS APPLY</code>) requerem extensões nos mapeadores semânticos.</li>
-    <li><strong>Transações com Rollbacks Parciais (Savepoints):</strong> Comandos procedurais complexos com múltiplos blocos de exceção aninhados (<code>EXCEPTION WHEN OTHERS THEN</code>) atualmente são unificados em um bloco de transação principal.</li>
-  </ul>
-
-  <br/>
-
-<h2>7.2 Arquitetura Proposta para Alta Escala</h2>
-
-  <p>Para suportar grandes volumes corporativos (milhares de procedures de um banco legado inteiro):</p>
-
-  <pre><code>[API Gateway] 
-      │
-      ▼
-[FastAPI /modernize] ──(Enfileira Job)──► [Redis / RabbitMQ Queue]
-                                                 │
-                                                 ▼
-                                     [Celery / ARQ Workers]
-                                     (Grafo LangGraph Paralelo)
-                                                 │
-                                                 ▼
-                                    [PostgreSQL History + Langfuse]</code></pre>
-
-  <ol>
-    <li><strong>Fila Assíncrona e Processamento Desacoplado:</strong><br/>
-    Substituir a invocação síncrona por filas assíncronas (Celery / RabbitMQ), retornando imediatamente um <code>job_id</code> para o cliente realizar polling via <code>GET /modernize/{job_id}</code> ou receber webhook.</li>
-    <li><strong>Cache Semântico de Procedimentos Similares:</strong><br/>
-    Implementação de cache vetorial (Redis + pgvector): se uma procedure já foi modernizada ou possui assinatura idêntica a outra já avaliada, o pipeline reutiliza a estrutura gerada com custo zero de tokens de LLM.</li>
-    <li><strong>Pluggable Dialect Drivers:</strong><br/>
-    Desacoplamento do Nó 1 em estratégias abstratas (<code>PostgreSQLDialectParser</code>, <code>OracleDialectParser</code>, <code>TSQLDialectParser</code>), aproveitando a compatibilidade multi-dialeto do <code>sqlglot</code>.</li>
-    <li><strong>Containerização de Workers com Ollama:</strong><br/>
-    Suporte a instâncias do Ollama distribuídas em nós com GPU no Docker Compose para ambientes isolados (<em>air-gapped</em>).</li>
-  </ol>
 
 </body>
 </html>
