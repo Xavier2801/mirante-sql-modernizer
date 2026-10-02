@@ -1,29 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
+ <meta charset="UTF-8">
 
-  <title>Mirante SQL Modernizer (PL/pgSQL -> Python 3.14)</title>
-
-<br/>
-
-[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
-[![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-orange.svg)](https://github.com/langchain-ai/langgraph)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-[![Observability-Langfuse](https://img.shields.io/badge/observability-Langfuse_v2-purple.svg)](https://langfuse.com/)
-[![Code-Quality](https://img.shields.io/badge/tests-11%20passed-brightgreen.svg)](tests/)
-
-<br/>
-
-Solução corporativa para modernização automatizada de rotinas legadas **PL/pgSQL** (Functions e Stored Procedures) para módulos modernos em **Python 3.14**.
-
-O projeto adota uma **arquitetura híbrida (Rules + LLM)**: utiliza parsing sintático determinístico e extração semântica prévia para mitigar alucinações, acoplando um orquestrador cíclico em **LangGraph**, persistência de auditoria em **PostgreSQL**, telemetria completa via **Langfuse v2** e métricas automatizadas de avaliação estática.
-
-<br/>
-<hr/>
-<br/>
-
-</head>
 <body>
 
   <h1>Mirante SQL Modernizer (PL/pgSQL -&gt; Python 3.14)</h1>
