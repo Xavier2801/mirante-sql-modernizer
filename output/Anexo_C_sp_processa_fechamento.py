@@ -204,4 +204,3 @@ def processa_fechamento(session: Session, conta_id: int) -> ResultadoFechamentoD
             message=f"Erro inesperado no fechamento da conta {conta_id}.",
             detalhes={"conta_id": conta_id, "origem": str(ex)},
         ) from ex
-```
