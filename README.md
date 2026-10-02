@@ -371,13 +371,27 @@ Soberania e Sigilo de Dados: Em contextos bancários e corporativos, queries de 
 Custo Zero de Infraestrutura de Observabilidade: Não depende de planos pagos por volume de eventos consumidos.
 Rastreabilidade Granular: Permite isolar spans do grafo, latências individuais por nó, taxas de acerto e auditoria financeira por chamada.
 
-5.2 Evidências de Execução no Langfuse
+## 5.2 Evidências de Execução no Langfuse
 
-Visão Geral de Traces em Lote (Anexos B a F)
+<br/>
+
+### Visão Geral de Traces em Lote (Anexos B a F)
 O pipeline captura cada execução de rotina de forma independente, discriminando latência, contagem de tokens de entrada/saída e custos financeiros calculados dinamicamente:
 
-Inspeção Detalhada da Geração (LLM Trace Detail)
-Ao inspecionar a geração individual, é possível auditar o payload de entrada (SQL original enriquecido), o código Python 3.14 sintetizado e a precisão do custo em dólares:
+<br/>
+
+![Langfuse Traces Overview](docs/screenshots/langfuse_traces.png)
+
+<br/>
+
+### Inspeção Detalhada da Geração — Estudo de Caso: Anexo D (`sp_transferencia_fundos`)
+Ao inspecionar a geração individual do Anexo D (rotina crítica com concorrência pessimista e operações de débito/crédito), é possível auditar o payload de entrada (SQL original enriquecido com detecção de `FOR UPDATE`), o código Python 3.14 sintetizado com transação atômica e a precisão do custo em dólares:
+
+<br/>
+
+![Langfuse Generation Detail - Anexo D](docs/screenshots/langfuse_detail.png)
+
+
 
 6. MÉTRICA DE EVALUATION AUTOMATIZADA (BÔNUS 3)
 Para além da validação pontual de cada requisição, foi implementado um módulo avaliador analítico (src/evaluator/pipeline_evaluator.py) exposto através do endpoint:
