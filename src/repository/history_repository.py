@@ -4,12 +4,11 @@ Gerencia a gravação e consulta do histórico de modernização na tabela moder
 """
 import os
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-# Configuração da URL da base de dados via variável de ambiente (12-Factor App)
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://postgres:postgres@localhost:5432/mirante_modernizer"
@@ -29,9 +28,9 @@ class HistoryRepository:
             generated_code: Optional[str],
             report: Dict[str, Any],
             status: str
-    ) -> int:
+    ) -> Any:
         """
-        Insere um novo registo de modernização na tabela modernization_history.
+        Insere um novo registro de modernização na tabela modernization_history.
         Retorna o ID gerado na base de dados.
         """
         insert_query = text("""
@@ -45,7 +44,7 @@ class HistoryRepository:
                             VALUES (
                                        :source_code,
                                        :generated_code,
-                                       :report,
+                                       CAST(:report AS jsonb),
                                        :status,
                                        :created_at
                                    )
@@ -64,48 +63,32 @@ class HistoryRepository:
                         "created_at": datetime.now(timezone.utc)
                     }
                 )
-                record_id = result.scalar()
+                return result.scalar()
 
-            return record_id
-        """
-        Insere um novo registo de modernização na tabela modernization_history.
-        Retorna o ID gerado na base de dados.
-        """
-        insert_query = text("""
-                            INSERT INTO modernization_history (
-                                source_code,
-                                generated_code,
-                                report,
-                                status,
-                                created_at
-                            )
-                            VALUES (
-                                       :source_code,
-                                       :generated_code,
-                                       :report,
-                                       :status,
-                                       :created_at
-                                   )
-                                RETURNING id;
-                            """)
-
+    def list_recent(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retorna os registros históricos mais recentes."""
+        query = text("""
+                     SELECT id, source_code, generated_code, report, status, created_at
+                     FROM modernization_history
+                     ORDER BY created_at DESC
+                         LIMIT :limit;
+                     """)
         with self.SessionLocal() as session:
-            result = session.execute(
-                insert_query,
+            rows = session.execute(query, {"limit": limit}).fetchall()
+            return [
                 {
-                    "source_code": source_code,
-                    "generated_code": generated_code or "",
-                    "report": json.dumps(report),
-                    "status": status,
-                    "created_at": datetime.now(timezone.utc)
+                    "id": r[0],
+                    "source_code": r[1],
+                    "generated_code": r[2],
+                    "report": r[3],
+                    "status": r[4],
+                    "created_at": r[5].isoformat() if r[5] else None,
                 }
-            )
-            session.commit()
-            record_id = result.scalar()
-            return record_id
+                for r in rows
+            ]
 
     def check_connection(self) -> bool:
-        """Verifica se o pool de conexões consegue contactar o PostgreSQL (Healthcheck)."""
+        """Verifica a integridade da conexão com o PostgreSQL (Healthcheck)."""
         try:
             with self.SessionLocal() as session:
                 session.execute(text("SELECT 1;"))

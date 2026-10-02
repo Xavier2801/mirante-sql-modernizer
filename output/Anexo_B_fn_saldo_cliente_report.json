@@ -8,11 +8,21 @@
     "contas",
     "v_saldo_total"
   ],
+  "telemetry": {
+    "provider": "gemini",
+    "model": "gemini-3.8-flash",
+    "prompt_tokens": 1031,
+    "completion_tokens": 1716,
+    "total_tokens": 3064,
+    "estimated_cost_usd": 0.000592,
+    "estimated_cost_brl": 0.003316
+  },
   "validation": {
     "is_valid_syntax": true,
     "ast_parsed": true,
     "syntax_error": null,
     "warnings": []
   },
+  "retries_applied": 0,
   "status": "sucesso"
 }

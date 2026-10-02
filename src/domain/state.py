@@ -15,7 +15,7 @@ class ProcedureMetadata(TypedDict, total=False):
     tables_referenced: List[str]
 
 
-class ValidationResult(TypedDict):
+class ValidationResult(TypedDict, total=False):
     """Resultado da análise sintática e checagens estáticas do Nó 4."""
     is_valid_syntax: bool
     ast_parsed: bool
@@ -25,8 +25,8 @@ class ValidationResult(TypedDict):
 
 class ModernizationState(TypedDict, total=False):
     """
-    Estado global que transita pelos 4 nós do Grafo LangGraph:
-    1. Parsing -> 2. Semantic Analysis -> 3. LLM Generation -> 4. Validation
+    Estado global que transita pelos nós do Grafo LangGraph:
+    1. Parsing -> 2. Semantic Analysis -> 3. Generation -> 4. Validation (com loop condicional)
     """
     # Entradas obrigatórias da requisição
     source_code: str
@@ -38,7 +38,12 @@ class ModernizationState(TypedDict, total=False):
 
     # Saída da geração LLM
     generated_code: Optional[str]
-    generation_rationale: Optional[str]  # Justificação técnica (SQL vs Python puro)
+    generation_rationale: Optional[str]
+    telemetry: Optional[Dict[str, Any]]
+
+    # Controle de resiliência e auto-correção
+    retry_count: int
+    error_history: List[str]
 
     # Saída da etapa de validação
     validation: ValidationResult

@@ -1,14 +1,22 @@
 """
 Serviço de Abstração de Modelos de Linguagem (LLM Service).
-Suporta Google Gemini, Ollama (local) e OpenAI de forma resiliente e tipada.
+Suporta Google Gemini, Ollama (local) e OpenAI com telemetria nativa de tokens e custos.
 """
 import os
 import re
-from typing import Optional
+from typing import Optional, Dict, Any
 
 
 class LLMService:
-    """Encapsula a comunicação com diferentes provedores de LLM."""
+    """Encapsula a comunicação com LLMs, rastreando tokens e custo estimado."""
+
+    # Preços de referência por 1M tokens (USD)
+    PRICING = {
+        "gemini-3.8-flash": {"input_per_million": 0.075, "output_per_million": 0.30},
+        "gemini-1.5-flash": {"input_per_million": 0.075, "output_per_million": 0.30},
+        "gpt-4o-mini": {"input_per_million": 0.15, "output_per_million": 0.60},
+        "ollama": {"input_per_million": 0.0, "output_per_million": 0.0},
+    }
 
     def __init__(
             self,
@@ -18,6 +26,15 @@ class LLMService:
     ):
         self.provider = (provider or os.getenv("LLM_PROVIDER", "gemini")).lower()
         self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("OPENAI_API_KEY")
+
+        self.last_telemetry: Dict[str, Any] = {
+            "provider": self.provider,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0,
+            "estimated_cost_brl": 0.0,
+        }
 
         if self.provider == "gemini":
             self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
@@ -33,25 +50,19 @@ class LLMService:
             raise ValueError(f"Provedor LLM não suportado: {self.provider}")
 
     def _init_gemini(self) -> None:
-        """Inicializa o cliente Google GenAI."""
         from google import genai
-
         if not self.api_key:
-            raise ValueError("GEMINI_API_KEY não foi configurada nas variáveis de ambiente.")
+            raise ValueError("GEMINI_API_KEY não configurada.")
         self.client = genai.Client(api_key=self.api_key)
 
     def _init_ollama(self) -> None:
-        """Inicializa o cliente Ollama."""
         import ollama
-
         self.client = ollama.Client(host=self.base_url)
 
     def _init_openai(self) -> None:
-        """Inicializa o cliente OpenAI."""
         from openai import OpenAI
-
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY não foi configurada nas variáveis de ambiente.")
+            raise ValueError("OPENAI_API_KEY não configurada.")
         self.client = OpenAI(api_key=self.api_key)
 
     def generate(
@@ -61,24 +72,28 @@ class LLMService:
             metadata: Optional[dict] = None,
             analysis: Optional[dict] = None,
             schema_context: Optional[str] = None,
-            **kwargs
+            **kwargs,
     ) -> str:
-        """Gera código modernizado a partir de prompt direto ou parâmetros de AST/análise."""
-        # Se não recebeu um prompt textual pronto, compõe o prompt com base nos parâmetros
+        """Gera código modernizado aceitando tanto prompt único quanto parâmetros nomeados."""
         if not prompt:
             prompt_parts = [
-                "Você é um engenheiro de software sênior/Staff especialista em migração de bancos relacionais para Python 3.14.",
-                "Converta a seguinte rotina PL/pgSQL para Python 3.14 moderno utilizando SQLAlchemy (Session) e padrões assíncronos/síncronos estritos com tipagem completa (Decimal para tipos monetários, sem loops N+1).\n",
-                f"--- CÓDIGO FONTE PL/PGSQL ---\n{source_code or kwargs.get('sql', '')}\n"
+                "Você é um engenheiro de software Staff especialista em banco de dados e modernização para Python 3.14.",
+                "Converta a rotina PL/pgSQL abaixo para código idiomático e performático utilizando SQLAlchemy 2.0.",
+                "REGRAS INEGOCIÁVEIS:",
+                "- Use estritamente decimal.Decimal para valores monetários/saldos (nunca float).",
+                "- Elimine loops cursados e evite antipadrões N+1 usando agregações ou subconsultas.",
+                "- Implemente locking pessimista com with_for_update() ou SELECT FOR UPDATE quando houver concorrência bancária.",
+                "- Tipagem estática completa com PEP 484/604.\n",
+                f"--- CÓDIGO FONTE PL/PGSQL ---\n{source_code or kwargs.get('sql', '')}\n",
             ]
             if metadata:
-                prompt_parts.append(f"Metadados extraídos: {metadata}")
+                prompt_parts.append(f"Metadados sintáticos: {metadata}")
             if analysis:
-                prompt_parts.append(f"Análise semântica e riscos: {analysis}")
+                prompt_parts.append(f"Diagnóstico de riscos: {analysis}")
             if schema_context:
-                prompt_parts.append(f"Esquema DDL: {schema_context}")
+                prompt_parts.append(f"Contexto DDL: {schema_context}")
 
-            prompt_parts.append("\nRetorne EXCLUSIVAMENTE o bloco de código Python moderno e tipado.")
+            prompt_parts.append("\nRetorne EXCLUSIVAMENTE o bloco de código Python moderno.")
             final_prompt = "\n".join(prompt_parts)
         else:
             final_prompt = prompt
@@ -95,69 +110,74 @@ class LLMService:
         return self._extract_python_code(raw_text)
 
     def _call_gemini(self, prompt: str) -> str:
-        """Invoca a API do Google Gemini com tratamento robusto do retorno."""
         response = self.client.models.generate_content(
             model=self.model_name,
             contents=prompt,
         )
 
-        # 1. Se response for uma lista de respostas
-        if isinstance(response, list):
-            collected = []
-            for item in response:
-                if hasattr(item, "text") and isinstance(item.text, str):
-                    collected.append(item.text)
-                else:
-                    collected.append(str(item))
-            return "".join(collected).strip()
+        # Rastreamento de tokens nativo do Gemini
+        prompt_tokens = 0
+        completion_tokens = 0
+        total_tokens = 0
 
-        # 2. Se response.text for uma string direta
+        if hasattr(response, "usage_metadata") and response.usage_metadata:
+            meta = response.usage_metadata
+            prompt_tokens = getattr(meta, "prompt_token_count", 0) or 0
+            completion_tokens = getattr(meta, "candidates_token_count", 0) or 0
+            total_tokens = getattr(meta, "total_token_count", 0) or (prompt_tokens + completion_tokens)
+
+        self._record_telemetry(prompt_tokens, completion_tokens, total_tokens)
+
+        # Extração de texto resiliente
         if hasattr(response, "text") and isinstance(response.text, str):
             return response.text.strip()
-
-        # 3. Se response.text for uma lista de chunks/strings
-        if hasattr(response, "text") and isinstance(response.text, list):
-            return "".join(str(part) for part in response.text).strip()
-
-        # 4. Extração via estrutura interna de candidates e parts
         if hasattr(response, "candidates") and response.candidates:
-            first_candidate = response.candidates[0]
-            if hasattr(first_candidate, "content") and hasattr(first_candidate.content, "parts"):
-                chunks = []
-                for part in first_candidate.content.parts:
-                    if hasattr(part, "text") and part.text:
-                        chunks.append(part.text)
-                return "".join(chunks).strip()
-
+            parts = response.candidates[0].content.parts
+            return "".join([p.text for p in parts if hasattr(p, "text")]).strip()
         return str(response).strip()
 
     def _call_ollama(self, prompt: str) -> str:
-        """Invoca o modelo local via Ollama."""
-        response = self.client.generate(
-            model=self.model_name,
-            prompt=prompt,
-        )
+        response = self.client.generate(model=self.model_name, prompt=prompt)
+        p_tokens = response.get("prompt_eval_count", 0)
+        c_tokens = response.get("eval_count", 0)
+        self._record_telemetry(p_tokens, c_tokens, p_tokens + c_tokens)
         return str(response.get("response", "")).strip()
 
     def _call_openai(self, prompt: str) -> str:
-        """Invoca a API OpenAI."""
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
         )
+        usage = response.usage
+        p_tokens = usage.prompt_tokens if usage else 0
+        c_tokens = usage.completion_tokens if usage else 0
+        self._record_telemetry(p_tokens, c_tokens, p_tokens + c_tokens)
         return str(response.choices[0].message.content or "").strip()
+
+    def _record_telemetry(self, prompt_tokens: int, completion_tokens: int, total_tokens: int) -> None:
+        """Calcula o custo financeiro aproximado com base na precificação do modelo."""
+        pricing = self.PRICING.get(self.model_name, self.PRICING.get("gemini-3.8-flash"))
+        cost_usd = (
+                (prompt_tokens / 1_000_000) * pricing["input_per_million"]
+                + (completion_tokens / 1_000_000) * pricing["output_per_million"]
+        )
+        usd_to_brl_rate = 5.60
+
+        self.last_telemetry = {
+            "provider": self.provider,
+            "model": self.model_name,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "estimated_cost_usd": round(cost_usd, 6),
+            "estimated_cost_brl": round(cost_usd * usd_to_brl_rate, 6),
+        }
 
     @staticmethod
     def _extract_python_code(text: str) -> str:
-        """Remove delimitadores markdown como ```python e ``` da resposta."""
         if not text:
             return ""
-
-        # Padrão para blocos de código markdown com python
         pattern = r"```(?:python)?\s*(.*?)\s*```"
         matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
-        if matches:
-            return matches[0].strip()
-
-        return text.strip()
+        return matches[0].strip() if matches else text.strip()

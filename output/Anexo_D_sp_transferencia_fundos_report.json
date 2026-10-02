@@ -6,11 +6,21 @@
   ],
   "parameters_analyzed": 3,
   "tables_referenced": [],
+  "telemetry": {
+    "provider": "gemini",
+    "model": "gemini-3.8-flash",
+    "prompt_tokens": 1239,
+    "completion_tokens": 2436,
+    "total_tokens": 5429,
+    "estimated_cost_usd": 0.000824,
+    "estimated_cost_brl": 0.004613
+  },
   "validation": {
     "is_valid_syntax": true,
     "ast_parsed": true,
     "syntax_error": null,
     "warnings": []
   },
+  "retries_applied": 0,
   "status": "sucesso"
 }

@@ -8,11 +8,21 @@
   "tables_referenced": [
     "contas"
   ],
+  "telemetry": {
+    "provider": "gemini",
+    "model": "gemini-3.8-flash",
+    "prompt_tokens": 1197,
+    "completion_tokens": 2026,
+    "total_tokens": 4484,
+    "estimated_cost_usd": 0.000698,
+    "estimated_cost_brl": 0.003906
+  },
   "validation": {
     "is_valid_syntax": true,
     "ast_parsed": true,
     "syntax_error": null,
     "warnings": []
   },
+  "retries_applied": 0,
   "status": "sucesso"
 }
