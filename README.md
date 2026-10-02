@@ -380,7 +380,7 @@ O pipeline captura cada execução de rotina de forma independente, discriminand
 
 <br/>
 
-![Langfuse Traces Overview](docs/screenshots/langfuse_traces.png)
+![Langfuse Traces Overview](https://raw.githubusercontent.com/Xavier2801/mirante-sql-modernizer/main/docs/screenshots/langfuse_traces.png)
 
 <br/>
 
@@ -389,7 +389,7 @@ Ao inspecionar a geração individual do Anexo D (rotina crítica com concorrên
 
 <br/>
 
-![Langfuse Generation Detail - Anexo D](docs/screenshots/langfuse_detail.png)
+![Langfuse Generation Detail - Anexo D](https://raw.githubusercontent.com/Xavier2801/mirante-sql-modernizer/main/docs/screenshots/langfuse_detail.png)
 
 ### Inspeção Detalhada da Geração — Estudo de Caso: Anexo D (`sp_transferencia_fundos`)
 Ao inspecionar a geração individual do Anexo D (rotina crítica com concorrência pessimista e operações de débito/crédito), é possível auditar o payload de entrada (SQL original enriquecido com deteção de `FOR UPDATE`), o código Python 3.14 sintetizado com transação atómica e a precisão do custo em dólares:
